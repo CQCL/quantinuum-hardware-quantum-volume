@@ -1,4 +1,4 @@
-# Quantinuum Hardware Specifications
+# Quantinuum Hardware Quantum Volume Data
 
 This repository contains the quantum volume data collected by Quantinuum.
 
