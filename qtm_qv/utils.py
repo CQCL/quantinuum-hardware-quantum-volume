@@ -21,7 +21,7 @@ from qiskit import QuantumCircuit
 def gate_counts(qv_circs):
     """Save all attributes of QVFitter object."""
     
-    gcounts = {'u1': [], 'u2':[], 'u3':[], 'cx': [], 'cz':[]}
+    gcounts = {'u1': [], 'u2':[], 'u3':[], 'cx': [], 'cz':[], 'rzz':[]}
     for qc in qv_circs:
         try: 
             count_dict = qc.count_ops()
