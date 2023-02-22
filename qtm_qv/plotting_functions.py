@@ -58,7 +58,7 @@ def success_v_time(qv_fitter,
     legend_name.append('Individual circuit')
     legend.append(
         ax.plot(
-            np.arange(1, ntrials), 
+            np.arange(ntrials), 
             cumulative_average(heavy_outputs), 
             color=ecolor[0], 
             linewidth=2.5
@@ -69,7 +69,7 @@ def success_v_time(qv_fitter,
     if bootstrap_ci:
         b_lower = []
         b_upper = []
-        for i in range(1, ntrials):
+        for i in range(1, ntrials + 1):
             lower_ci, upper_ci = bootstrap_bounds(
                 qv_fitter, 
                 reps=10000, 
@@ -80,7 +80,7 @@ def success_v_time(qv_fitter,
         if fill_range:
             legend.append(
                 ax.plot(
-                    np.arange(1, ntrials), 
+                    np.arange(ntrials), 
                     np.array(b_upper), 
                     color=ecolor[2], 
                     linestyle='-', 
@@ -88,14 +88,14 @@ def success_v_time(qv_fitter,
                 )[0]
             )
             ax.plot(
-                np.arange(1, ntrials), 
+                np.arange(ntrials), 
                 np.array(b_lower), 
                 color=ecolor[2], 
                 linestyle='-', 
                 linewidth=1.5
             )
             ax.fill_between(
-                np.arange(1, ntrials), 
+                np.arange(ntrials), 
                 y1=np.array(b_upper), 
                 y2=np.array(b_lower), 
                 alpha=0.3, 
@@ -105,7 +105,7 @@ def success_v_time(qv_fitter,
         else:
             legend.append(
                 ax.plot(
-                    np.arange(1, ntrials), 
+                    np.arange(ntrials), 
                     np.array(b_lower), 
                     color=ecolor[2], 
                     linestyle='-', 
@@ -117,7 +117,7 @@ def success_v_time(qv_fitter,
     if original_ci:
         o_lower = []
         o_upper = []
-        for i in range(1, ntrials): 
+        for i in range(ntrials): 
             lower_ci, upper_ci = original_bounds(
                 np.mean(heavy_outputs[:i]),
                 i
@@ -127,7 +127,7 @@ def success_v_time(qv_fitter,
         if fill_range:
             legend.append(
                     ax.plot(
-                        np.arange(1, ntrials), 
+                        np.arange(ntrials), 
                         np.array(o_lower), 
                         color=ecolor[1], 
                         linestyle='-', 
@@ -135,14 +135,14 @@ def success_v_time(qv_fitter,
                     )[0]
                 )
             ax.plot(
-                np.arange(1, ntrials), 
+                np.arange(ntrials), 
                 np.array(o_upper), 
                 color=ecolor[1], 
                 linestyle='-', 
                 linewidth=1.5
             )
             ax.fill_between(
-                np.arange(1, ntrials), 
+                np.arange(ntrials), 
                 y1=np.array(o_upper), 
                 y2=np.array(o_lower), 
                 alpha=0.3, 
@@ -153,7 +153,7 @@ def success_v_time(qv_fitter,
         else:
             legend.append(
                 ax.plot(
-                    np.arange(1, ntrials), 
+                    np.arange(ntrials), 
                     np.array(o_lower), 
                     color=ecolor[1], 
                     linestyle='-', 
@@ -190,6 +190,6 @@ def success_v_time(qv_fitter,
 
 def cumulative_average(sample):
     
-    avg = [np.mean(sample[:i]) for i in range(1, len(sample))]
+    avg = [np.mean(sample[:i+1]) for i in range(len(sample))]
     
     return np.array(avg)
