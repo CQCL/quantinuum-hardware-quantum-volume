@@ -1,4 +1,4 @@
-# Copyright 2022 Quantinuum (www.quantinuum.com)
+# Copyright 2023 Quantinuum (www.quantinuum.com)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -102,7 +102,10 @@ def ideal2qiskit(nqubits,
     """
     qv_circs_new = []
     for i, circ in enumerate(qv_circs_nomeas):
-        qv_circs_new.append(QuantumCircuit.from_qasm_str(circ))
+        circ = circ.replace('\ninclude "hqslib1_dev.inc";', '')
+        qc = QuantumCircuit.from_qasm_str(circ)
+        qc.remove_final_measurements()
+        qv_circs_new.append(qc)
         qv_circs_new[-1].name = f'qv_depth_{nqubits}_trial_{i}'
         
     backend = Aer.get_backend('statevector_simulator')

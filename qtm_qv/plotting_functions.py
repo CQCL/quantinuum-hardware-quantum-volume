@@ -1,4 +1,4 @@
-# Copyright 2022 Quantinuum (www.quantinuum.com)
+# Copyright 2023 Quantinuum (www.quantinuum.com)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -72,7 +72,7 @@ def success_v_time(qv_fitter,
         for i in range(1, ntrials + 1):
             lower_ci, upper_ci = bootstrap_bounds(
                 qv_fitter, 
-                reps=10000, 
+                reps=1000, 
                 ntrials=i
             )
             b_lower.append(lower_ci)
