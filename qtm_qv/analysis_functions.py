@@ -1,4 +1,4 @@
-# Copyright 2024 Quantinuum (www.quantinuum.com)
+# Copyright 2025 Quantinuum (www.quantinuum.com)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ from typing import Optional
 import numpy as np
 from scipy.special import erf
 
+from qiskit.ignis.verification.quantum_volume import QVFitter
+
 
 def original_bounds(success: float,
                     trials: int):
@@ -30,29 +32,45 @@ def original_bounds(success: float,
     return lower_ci, upper_ci
 
 
-def bootstrap_bounds(qv_fitter,
+def bootstrap_bounds(qv_fitter: Optional[QVFitter] = None,
+                     shot_list: Optional[list] = None,
+                     success_list: Optional[list] = None,
                      reps: int = 1000,
                      ntrials: Optional[int] = None):
     ''' Returns bounds from bootstrap CI method. '''
 
-    nqubits = len(qv_fitter.qubit_lists[0])
-
+    if qv_fitter is not None:
+        nqubits = len(qv_fitter.qubit_lists[0])
+        
+        shot_list = np.array([
+            qv_fitter._circ_shots[f'qv_depth_{nqubits}_trial_{i}']
+            for i in range(ntrials)
+        ])
+        success_list = np.array([
+            qv_fitter.heavy_output_counts[f'qv_depth_{nqubits}_trial_{i}']
+            for i in range(ntrials)
+        ])
+    elif success_list is not None and shot_list is not None:
+        shot_list = np.array(shot_list[:ntrials])
+        success_list = np.array(success_list[:ntrials])
+    else:
+        print('Need to define `qv_fitter` or `heavy_outputs` defined!')
+        
     success = bootstrap(
-        qv_fitter,
-        reps,
-        ntrials
+        shot_list=shot_list,
+        success_list=success_list,
+        reps=reps,
+        ntrials=ntrials
     )
-    qv_mean = np.mean([
-        qv_fitter.heavy_output_counts[f'qv_depth_{nqubits}_trial_{i}']/qv_fitter._circ_shots[f'qv_depth_{nqubits}_trial_{i}']
-        for i in range(ntrials)
-    ])
+    qv_mean = np.mean(success_list/shot_list)
     lower_ci = 2*qv_mean - np.quantile(success, 1/2 + erf(np.sqrt(2))/2)
     upper_ci = 2*qv_mean - np.quantile(success, 1/2 - erf(np.sqrt(2))/2)
 
     return lower_ci, upper_ci
     
 
-def bootstrap(qv_fitter,
+def bootstrap(success_list: list,
+              shot_list: list,
               reps: int = 1000,
               ntrials: Optional[int] = None):
     ''' 
@@ -61,20 +79,13 @@ def bootstrap(qv_fitter,
     Notes:
         -updated to take arb number of shots per circuit
     
-    '''
-    nqubits = len(qv_fitter.qubit_lists[0])
-        
+    '''        
     if not ntrials:
-        ntrials = len(qv_fitter.heavy_output_counts)
-        
-    shot_list = np.array([
-        qv_fitter._circ_shots[f'qv_depth_{nqubits}_trial_{i}']
-        for i in range(ntrials)
-    ])
-    success_list = np.array([
-        qv_fitter.heavy_output_counts[f'qv_depth_{nqubits}_trial_{i}']
-        for i in range(ntrials)
-    ])
+        ntrials = len(success_list)
+    else:   
+        shot_list = np.array(shot_list[:ntrials])
+        success_list = np.array(success_list[:ntrials])
+
     resampled_ind = np.random.randint(0, ntrials, size=(reps, ntrials))
     resampled_shots = shot_list[resampled_ind]
     resampled_probs = success_list[resampled_ind]/resampled_shots
