@@ -1,4 +1,4 @@
-# Copyright 2024 Quantinuum (www.quantinuum.com)
+# Copyright 2025 Quantinuum (www.quantinuum.com)
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,13 +20,16 @@ from typing import Optional
 import numpy as np
 import matplotlib.pyplot as plt
 
+from qiskit.ignis.verification.quantum_volume import QVFitter
+
 from qtm_qv.analysis_functions import bootstrap_bounds, original_bounds
 
 ecolor = plt.get_cmap('tab10').colors
 
 
-def success_v_time(qv_fitter,
-                   nqubits: int,
+def success_v_time(qv_fitter: Optional[QVFitter] = None,
+                   shot_list: Optional[list] = None,
+                   success_list: Optional[list] = None,
                    original_ci: bool = False,
                    bootstrap_ci: bool = False,
                    fill_range: bool = False,
@@ -35,12 +38,27 @@ def success_v_time(qv_fitter,
           
     axis_font = 14
 
-    ntrials = len(qv_fitter.heavy_output_counts)
-    heavy_outputs = [
-        qv_fitter.heavy_output_counts[f'qv_depth_{nqubits}_trial_{i}']/qv_fitter._circ_shots[f'qv_depth_{nqubits}_trial_{i}']
-        for i in range(ntrials)
-    ]
-    ntrials = len(heavy_outputs)
+    if qv_fitter is not None:
+        ntrials = len(qv_fitter.heavy_output_counts)
+        nqubits = len(qv_fitter.qubit_lists[0])
+        
+        shot_list = np.array([
+            qv_fitter._circ_shots[f'qv_depth_{nqubits}_trial_{i}']
+            for i in range(ntrials)
+        ])
+        success_list = np.array([
+            qv_fitter.heavy_output_counts[f'qv_depth_{nqubits}_trial_{i}']
+            for i in range(ntrials)
+        ])
+    elif success_list is not None and shot_list is not None:
+        ntrials = len(success_list)
+        shot_list = np.array(shot_list)
+        success_list = np.array(success_list)
+    else:
+        print('Need to define `qv_fitter` or `heavy_outputs` defined!')
+
+    heavy_output_probs = success_list/shot_list
+
     fig, ax = plt.subplots(figsize=(7,4))
 
     legend = []
@@ -48,7 +66,7 @@ def success_v_time(qv_fitter,
     legend.append(
         ax.scatter(
             np.arange(ntrials), 
-            heavy_outputs, 
+            heavy_output_probs, 
             s=25, 
             color=ecolor[0], 
             alpha=0.4, 
@@ -59,7 +77,7 @@ def success_v_time(qv_fitter,
     legend.append(
         ax.plot(
             np.arange(ntrials), 
-            cumulative_average(heavy_outputs), 
+            cumulative_average(heavy_output_probs), 
             color=ecolor[0], 
             linewidth=2.5
         )[0]
@@ -71,7 +89,8 @@ def success_v_time(qv_fitter,
         b_upper = []
         for i in range(1, ntrials + 1):
             lower_ci, upper_ci = bootstrap_bounds(
-                qv_fitter, 
+                shot_list=shot_list,
+                success_list=success_list,
                 reps=1000, 
                 ntrials=i
             )
@@ -119,7 +138,7 @@ def success_v_time(qv_fitter,
         o_upper = []
         for i in range(ntrials): 
             lower_ci, upper_ci = original_bounds(
-                np.mean(heavy_outputs[:i]),
+                np.mean(heavy_output_probs[:i]),
                 i
             )
             o_lower.append(lower_ci)
@@ -172,7 +191,7 @@ def success_v_time(qv_fitter,
     )
     legend_name.append('Passing threshold')
 
-    ax.set_ylim(np.min(heavy_outputs)-0.02, np.max(heavy_outputs)+0.02)
+    ax.set_ylim(np.min(heavy_output_probs)-0.02, np.max(heavy_output_probs)+0.02)
     ax.set_xlim(0, ntrials)
     ax.set_ylabel('Heavy output frequency', fontsize=axis_font)
     ax.set_xlabel('Circuit index', fontsize=axis_font)
